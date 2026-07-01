@@ -130,3 +130,6 @@ eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv zsh)"
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# 機器專屬 / 私密設定（不進 repo）：放各機獨立的 alias、API key、路徑等
+[ -f ~/.zshrc.local ] && source ~/.zshrc.local
