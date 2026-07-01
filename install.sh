@@ -30,6 +30,7 @@ link() {
 # ── 設定對應表：新增設定就加一行 ──────────────────────────────────────────────
 link "nvim"            "$HOME/.config/nvim"
 link "tmux/.tmux.conf" "$HOME/.tmux.conf"
+link "zsh/.zshrc"      "$HOME/.zshrc"
 
 echo
 echo "完成。重開 shell 或 tmux（prefix + r 若有設 reload）即可套用。"

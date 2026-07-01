@@ -8,6 +8,7 @@
 |---|---|---|
 | Neovim | `nvim/` | `~/.config/nvim` |
 | tmux | `tmux/.tmux.conf` | `~/.tmux.conf` |
+| zsh | `zsh/.zshrc` | `~/.zshrc` |
 
 ## 新電腦安裝
 
