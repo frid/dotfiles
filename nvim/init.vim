@@ -31,6 +31,15 @@ let g:tex_conceal = ""
 set conceallevel=0
 
 
+" ── vim-plug 自動 bootstrap ──────────────────────────────────────────────
+" 新電腦上若 plug.vim 不存在，自動下載並在啟動後執行 :PlugInstall。
+let s:plug_path = stdpath('data') . '/site/autoload/plug.vim'
+if empty(glob(s:plug_path))
+  silent execute '!curl -fLo ' . s:plug_path . ' --create-dirs '
+        \ . 'https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+  autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+endif
+
 call plug#begin('~/.vim/plugged')
 
 " 狀態列
