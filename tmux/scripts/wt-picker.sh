@@ -16,7 +16,7 @@ while IFS= read -r p; do
   choices+=("$base")
 done < <(git -C "$REPO" worktree list | awk '{print $1}')
 
-sel="$(printf '%s\n' "${choices[@]}" | fzf --prompt='worktree> ' --height=~50%)"
+sel="$(printf '%s\n' "${choices[@]}" | fzf --prompt='worktree> ' --height=50%)"
 [ -z "${sel:-}" ] && exit 0
 
 target_path="${path_of[$sel]}"
