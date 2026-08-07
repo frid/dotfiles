@@ -139,3 +139,16 @@ export NVM_DIR="$HOME/.nvm"
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/dotfiles/bin:$PATH"
+
+# cca：只顯示「目前所在 worktree」的 Claude Code Agent View。
+# Agent View 本身不顯示 cwd，多 worktree 時分不出誰是誰；用 --cwd 限定範圍代替。
+# 注意：在主 worktree 執行時，因 worktree 實體位於 .claude/worktrees/ 底下，
+# 仍會一併列出所有 worktree 的 session（過濾方向是單向的）。
+cca() {
+  local root
+  root="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+    echo "cca: 目前目錄不是 git repo" >&2
+    return 1
+  }
+  claude agents --cwd "$root" "$@"
+}
