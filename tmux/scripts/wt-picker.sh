@@ -45,8 +45,8 @@ tmux new-window -n "$win_name" -c "$target_path"
 tmux split-window -v -t "$win_name" -c "$target_path"
 tmux split-window -h -t "${win_name}.1" -c "$target_path"
 
-# 右下 shell pane 先開該 worktree 的 Agent View（cca 為 .zshrc 定義的函式，
+# 左下 claude pane 先開該 worktree 的 Agent View（cca 為 .zshrc 定義的函式，
 # 故用 send-keys 讓互動 shell 執行；離開 TUI 後仍是可用的 shell）
-tmux send-keys -t "${win_name}.2" 'cca' C-m
+tmux send-keys -t "${win_name}.1" 'cca' C-m
 
 tmux select-pane -t "${win_name}.0"
