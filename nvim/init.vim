@@ -205,6 +205,67 @@ endfunction
 " 智慧開啟：目錄展開／圖片交給 Windows 外部程式／其餘正常開啟。
 " 沿用上面 VimScript 的 FridOpenExternal()、FridIsImage()（WSL explorer.exe 邏輯已驗證）。
 lua << EOF
+-- ── devicons glyph 降級（Nerd Fonts v2 字型相容）─────────────────────────
+-- nvim-web-devicons 已升到 NF v3 字碼，全表 785 項中有 126 項落在
+-- U+F0000+（Material Design Icons）區段。NF v2 patch 的字型沒有該區段，
+-- .txt／.log／.xlsx 等就顯示成豆腐字（2026-08-07 於 Sarasa Term TC NF 實證：
+-- 解該 ttf 的 cmap，U+F0219/F0331/F021B 皆缺，而 U+F48A/E60B 在）。
+--
+-- 跨機器策略：**預設降級**（v2 與 v3 字型都有的字，任何機器都不會豆腐）；
+-- 某台機器確定用 NF v3 字型、想要原生圖示 → 該機器設 `NVIM_NF_V3=1`
+-- 環境變數（寫在機器本地的 shell rc，不進 dotfile）即跳過本段。
+-- 不確定某台機器的字型是哪一版 → `:NFProbe` 目視比對。
+vim.api.nvim_create_user_command("NFProbe", function()
+  local n = vim.fn.nr2char
+  vim.notify(table.concat({
+    "NF v2 區段（應正常）： " .. n(0xF15C) .. " " .. n(0xF1C3) .. " " .. n(0xE60B),
+    "NF v3 區段（豆腐＝v2 字型）： " .. n(0xF0219) .. " " .. n(0xF021B) .. " " .. n(0xF0331),
+    "上排看得到、下排是空box → 保持預設降級；兩排都正常 → 可設 NVIM_NF_V3=1",
+  }, "\n"))
+end, { desc = "目視檢查終端機字型是否含 Nerd Fonts v3 字碼" })
+
+if vim.env.NVIM_NF_V3 ~= "1" then
+  local ok, devicons = pcall(require, "nvim-web-devicons")
+  if ok then
+    -- 用字碼指定，避免私用區字元在編輯／複製時被吃掉
+    local g = function(cp) return vim.fn.nr2char(cp) end
+    local FILE      = g(0xF15B)  -- nf-fa-file
+    local TEXT      = g(0xF15C)  -- nf-fa-file_text
+    local CODE      = g(0xF1C9)  -- nf-fa-file_code_o
+    local WORD      = g(0xF1C2)  -- nf-fa-file_word_o
+    local EXCEL     = g(0xF1C3)  -- nf-fa-file_excel_o
+    local PPT       = g(0xF1C4)  -- nf-fa-file_powerpoint_o
+    local BOOK      = g(0xF02D)  -- nf-fa-book
+    local KEY       = g(0xF084)  -- nf-fa-key（雜湊／簽章）
+    local TERMINAL  = g(0xF120)  -- nf-fa-terminal
+    local DOCKER    = g(0xF308)  -- nf-linux-docker
+    local subs = {
+      txt = TEXT, log = TEXT, lrc = TEXT, srt = TEXT, sub = TEXT,
+      ssa = TEXT, ass = TEXT, bak = TEXT, m3u = TEXT, ["m3u8"] = TEXT, pls = TEXT,
+      doc = WORD, docx = WORD,
+      xls = EXCEL, xlsx = EXCEL,
+      ppt = PPT,  pptx = PPT,
+      xml = CODE, xslt = CODE, xaml = CODE, razor = CODE, cshtml = CODE,
+      svg = CODE, svgz = CODE, cs = CODE, csproj = CODE,
+      readme = BOOK, ["readme.md"] = BOOK, security = BOOK, ["security.md"] = BOOK,
+      md5 = KEY, sha1 = KEY, sha224 = KEY, sha256 = KEY, sha384 = KEY, sha512 = KEY,
+      asc = KEY, sig = KEY, signature = KEY, pub = KEY, kbx = KEY,
+      ps1 = TERMINAL, psm1 = TERMINAL, psd1 = TERMINAL, tcl = TERMINAL, tbc = TERMINAL,
+      Dockerfile = DOCKER, dockerfile = DOCKER, containerfile = DOCKER,
+      dockerignore = DOCKER, [".dockerignore"] = DOCKER,
+      ["compose.yaml"] = DOCKER, ["compose.yml"] = DOCKER,
+      ["docker-compose.yaml"] = DOCKER, ["docker-compose.yml"] = DOCKER,
+    }
+    local patched = {}
+    for name, def in pairs(devicons.get_icons()) do
+      if def.icon and vim.fn.char2nr(def.icon) > 0xF0000 then
+        patched[name] = vim.tbl_extend("force", {}, def, { icon = subs[name] or FILE })
+      end
+    end
+    if next(patched) then devicons.set_icon(patched) end
+  end
+end
+
 local api = require("nvim-tree.api")
 
 local function smart_enter()
@@ -251,7 +312,7 @@ require("nvim-tree").setup({
   respect_buf_cwd = true,
   update_focused_file = { enable = true, update_root = false },
   view = {
-    width = 36,
+    width = 38,
     preserve_window_proportions = true,
   },
   renderer = {
@@ -260,6 +321,8 @@ require("nvim-tree").setup({
     indent_markers = { enable = true },
     icons = {
       git_placement = "after",
+      -- icon 與檔名之間留白（預設 " " 太擠，不易閱讀）
+      padding = { icon = "  " },
       show = { file = true, folder = true, folder_arrow = true, git = true },
     },
   },
