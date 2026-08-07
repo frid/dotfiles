@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# 列出目前所有 Claude Code session 各自在哪個 worktree（Agent View 不顯示 cwd，這裡補上）
+# 用法：cc-where
+set -euo pipefail
+
+claude agents --json | python3 -c '
+import json, os, sys
+
+rows = json.load(sys.stdin)
+by_dir = {}
+for r in rows:
+    cwd = r.get("cwd", "?")
+    # .claude/worktrees/<name> → 取 <name>；主目錄 → 取專案名 + (main)
+    if "/.claude/worktrees/" in cwd:
+        label = cwd.split("/.claude/worktrees/", 1)[1].split("/")[0]
+    else:
+        label = os.path.basename(cwd) + " (main)"
+    by_dir.setdefault(label, []).append(r)
+
+for label in sorted(by_dir):
+    print(f"\n\033[1;36m{label}\033[0m")
+    for r in by_dir[label]:
+        state = r.get("state") or r.get("status", "")
+        kind = r.get("kind", "")
+        name = r.get("name") or "(unnamed)"
+        print(f"  [{state:<8}] {kind:<11} {name}")
+print()
+'

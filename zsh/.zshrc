@@ -138,3 +138,4 @@ export NVM_DIR="$HOME/.nvm"
 # 機器專屬 / 私密設定（不進 repo）：放各機獨立的 alias、API key、路徑等
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
 export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/dotfiles/bin:$PATH"
