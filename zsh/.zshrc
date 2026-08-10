@@ -140,6 +140,10 @@ export NVM_DIR="$HOME/.nvm"
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/dotfiles/bin:$PATH"
 
+# fzf：apt 的 /usr/bin/fzf 是 0.29（2021 年版，--height 等語法與現行差異大）。
+# vim-plug 裝的 junegunn/fzf 本體較新，排到 PATH 前面讓 shell 與 nvim 用同一版。
+[ -x "$HOME/.vim/plugged/fzf/bin/fzf" ] && export PATH="$HOME/.vim/plugged/fzf/bin:$PATH"
+
 # cca：只顯示「目前所在 worktree」的 Claude Code Agent View。
 # Agent View 本身不顯示 cwd，多 worktree 時分不出誰是誰；用 --cwd 限定範圍代替。
 # 注意：在主 worktree 執行時，因 worktree 實體位於 .claude/worktrees/ 底下，

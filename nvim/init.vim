@@ -56,9 +56,10 @@ Plug 'nvim-tree/nvim-web-devicons'
 " vim-devicons 保留：只供 airline 的 filetype glyph，nvim-tree 不吃它
 Plug 'ryanoasis/vim-devicons'
 
-" 模糊搜尋
-Plug 'junegunn/fzf'
-Plug 'junegunn/fzf.vim'
+" 模糊搜尋（2026-08-10 由 fzf.vim 換成 fzf-lua：原生支援 devicons、鍵位可重綁）
+" junegunn/fzf 保留：fzf-lua 仍需要 fzf 本體執行檔
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'ibhagwan/fzf-lua'
 
 " Git
 Plug 'tpope/vim-fugitive'
@@ -109,6 +110,50 @@ if ok then
 end
 EOF
 
+" ── fzf-lua ──────────────────────────────────────────────────────────────
+" 圖示走 nvim-web-devicons（與 nvim-tree 共用，不需額外裝東西）
+lua << EOF
+local ok, fzf = pcall(require, 'fzf-lua')
+if ok then
+  -- 系統的 /usr/bin/fzf 是 0.29（apt 套件過舊），fzf-lua 需要 >= 0.36
+  -- 改用 vim-plug 裝的 junegunn/fzf 本體，避免撞到 PATH 上的舊版
+  local bundled = vim.fn.expand('~/.vim/plugged/fzf/bin/fzf')
+  fzf.setup({
+    fzf_bin = vim.fn.executable(bundled) == 1 and bundled or nil,
+    defaults = {
+      file_icons  = true,   -- 檔案類型圖示
+      color_icons = true,   -- 圖示依副檔名上色
+      -- 圖示與檔名間補一格（預設為空字串，會黏在一起）
+      file_icon_padding = ' ',
+      -- git_icons 關閉：每開一次 picker 就跑一次 git status，在 /mnt/d（DrvFs +
+      -- Google Drive）上要 1 秒以上，開選單會明顯卡住。要看 git 狀態用 \gs。
+      git_icons   = false,
+    },
+    winopts = {
+      height  = 0.85,
+      width   = 0.85,
+      preview = { layout = 'flex', scrollbar = 'float' },
+    },
+    keymap = {
+      builtin = {
+        ['<C-d>'] = 'preview-page-down',
+        ['<C-u>'] = 'preview-page-up',
+      },
+    },
+    actions = {
+      files = {
+        ['enter']  = fzf.actions.file_edit_or_qf,
+        ['ctrl-x'] = fzf.actions.file_split,
+        ['ctrl-s'] = fzf.actions.file_vsplit,   -- 原本是 ctrl-v，避開終端貼上
+        ['ctrl-t'] = fzf.actions.file_tabedit,
+        ['ctrl-v'] = false,                     -- 讓 ctrl-v 留給 Windows Terminal 貼上
+        ['alt-q']  = fzf.actions.file_sel_to_qf,
+      },
+    },
+  })
+end
+EOF
+
 " Markdown fold
 " Markdown Tree-sitter folding
 augroup markdown_folding
@@ -135,9 +180,14 @@ let g:airline_powerline_fonts = 1
 nnoremap <F3> <Cmd>NvimTreeToggle<CR>
 nnoremap <leader>tf <Cmd>NvimTreeFindFile<CR>
 "
-" fzf 快捷鍵
-nnoremap <F4> :Files<CR>
-nnoremap <C-f> :Rg<CR>
+" fzf-lua 快捷鍵
+nnoremap <leader>b <Cmd>FzfLua buffers<CR>
+nnoremap <leader>h <Cmd>FzfLua oldfiles<CR>
+nnoremap <leader>f <Cmd>FzfLua files<CR>
+nnoremap <leader>r <Cmd>FzfLua live_grep<CR>
+nnoremap <leader>l <Cmd>FzfLua blines<CR>
+nnoremap <leader>gs <Cmd>FzfLua git_status<CR>
+nnoremap <leader>gf <Cmd>FzfLua git_files<CR>
 
 " configure file reload
 nnoremap <leader>sv :source $MYVIMRC<CR>
@@ -376,6 +426,11 @@ require("bufferline").setup({
 
         -- 顯示設定
         show_buffer_icons = true,
+        -- 圖示與檔名之間補一格（bufferline 沒有專門的 padding 選項，
+        -- 只能從檔名前綴一個空白達成）
+        name_formatter = function(buf)
+            return " " .. vim.fn.fnamemodify(buf.name, ":t")
+        end,
         show_buffer_close_icons = true,
         show_close_icon = true,
         always_show_bufferline = true,
