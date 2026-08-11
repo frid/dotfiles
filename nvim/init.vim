@@ -436,6 +436,20 @@ require("bufferline").setup({
         always_show_bufferline = true,
         separator_style = "thin",
 
+        -- icon 與檔名之間多留一格（NF glyph 貼太緊）
+        -- bufferline 無獨立間距選項，改在 icon 字串尾端補空白
+        get_element_icon = function(element)
+            local devicons = require("nvim-web-devicons")
+            local icon, hl = devicons.get_icon_by_filetype(
+                element.filetype, { default = false })
+            if not icon then
+                icon, hl = devicons.get_icon(
+                    element.path or "", element.extension, { default = true })
+            end
+            if not icon then return nil end
+            return icon .. " ", hl
+        end,
+
         -- 讓 bufferline 避開左側 nvim-tree
         offsets = {
             {
