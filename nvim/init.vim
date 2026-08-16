@@ -8,6 +8,25 @@ set expandtab
 set autoindent
 set smartindent
 set clipboard=unnamedplus
+
+" WSL：指定 win32yank 為剪貼簿後端。
+" 不指定的話 nvim 會自動挑到 wl-copy，但 WSLg 的 Wayland socket
+" 不在 $XDG_RUNTIME_DIR，會出現 Failed to connect to a Wayland server。
+if executable('win32yank.exe')
+  let g:clipboard = {
+        \   'name': 'win32yank',
+        \   'copy': {
+        \      '+': 'win32yank.exe -i --crlf',
+        \      '*': 'win32yank.exe -i --crlf',
+        \    },
+        \   'paste': {
+        \      '+': 'win32yank.exe -o --lf',
+        \      '*': 'win32yank.exe -o --lf',
+        \   },
+        \   'cache_enabled': 0,
+        \ }
+endif
+
 set mouse=a
 set termguicolors
 set cursorline
