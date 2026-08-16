@@ -156,3 +156,7 @@ cca() {
   }
   claude agents --cwd "$root" "$@"
 }
+
+# ca：以「目前資料夾」為範圍的 Agent View（不要求 git repo，適合 Trustmark 這類非 repo 專案）。
+# 可帶路徑參數改看別的專案：ca /path/to/project
+ca() { claude agents --cwd "${1:-$PWD}"; }
