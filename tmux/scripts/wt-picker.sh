@@ -6,21 +6,36 @@
 #   - 沒有就新建（上 nvim 滿寬／下左 claude／下右 shell，皆 cd 到該 worktree）
 set -euo pipefail
 
-if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
+if ! common_dir="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"; then
   tmux display-message "wt-picker: 目前目錄不是 git repo"
   exit 1
 fi
 
+# 直接讀 .git/worktrees/*/gitdir 列出 worktree，不用 git worktree list：
+# 後者會逐一檢查每個 worktree，在 /mnt/g 這類慢速掛載上一次就要約 0.7 秒。
+# gitdir 可能是相對路徑（worktree.useRelativePaths），用 realpath -ms 純字串解析，不碰檔案系統。
+list_worktrees() {
+  dirname "$common_dir"
+  local f wt_git
+  for f in "$common_dir"/worktrees/*/gitdir; do
+    [ -f "$f" ] || continue
+    wt_git="$(<"$f")"
+    [[ "$wt_git" = /* ]] || wt_git="$(realpath -ms "$(dirname "$f")/$wt_git")"
+    dirname "$wt_git"
+  done
+}
+
 declare -A path_of
 choices=()
+main_path=""
 while IFS= read -r p; do
+  [ -z "$main_path" ] && main_path="$p"
   base="$(basename "$p")"
   choices+=("$base")
   path_of["$base"]="$p"
-done < <(git worktree list --porcelain | awk '/^worktree /{print $2}')
+done < <(list_worktrees)
 
 # 清單第一筆固定是主 worktree，統一顯示為 master，方便跨專案辨識
-main_path="$(git worktree list --porcelain | awk '/^worktree /{print $2; exit}')"
 main_base="$(basename "$main_path")"
 if [ "$main_base" != "master" ] && [ -n "${path_of[$main_base]:-}" ]; then
   path_of["master"]="${path_of[$main_base]}"
@@ -35,6 +50,14 @@ sel="$(printf '%s\n' "${choices[@]}" | fzf --prompt='worktree> ' --height=50%)"
 
 target_path="${path_of[$sel]}"
 win_name="$sel"
+
+# 先找本 session 裡已有 pane 停在該 worktree 路徑的 window（例如主 worktree 的 0:claude），有就切過去
+existing="$(tmux list-panes -s -F '#{window_index}	#{pane_current_path}' \
+  | awk -F '\t' -v p="$target_path" '$2 == p {print $1; exit}')"
+if [ -n "$existing" ]; then
+  tmux select-window -t ":$existing"
+  exit 0
+fi
 
 if tmux list-windows -F '#{window_name}' | grep -qx "$win_name"; then
   tmux select-window -t ":=$win_name"
