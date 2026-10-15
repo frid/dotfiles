@@ -3,7 +3,7 @@
 # 用呼叫時所在 pane 的目錄判斷是哪個 git repo（不寫死路徑，誰在哪個專案按都能用）。
 # 列出該 repo 的 git worktree（含主 worktree，顯示為 master），選了之後：
 #   - 已有對應 window 就切過去
-#   - 沒有就新建（上 nvim 滿寬／下左 claude／下右 shell，皆 cd 到該 worktree）
+#   - 沒有就新建（上 nvim 滿寬／下右 shell，cd 到該 worktree；下左 claude 開主控台 Agent View）
 set -euo pipefail
 
 if ! common_dir="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"; then
@@ -68,8 +68,8 @@ tmux new-window -n "$win_name" -c "$target_path"
 tmux split-window -v -t "$win_name" -c "$target_path"
 tmux split-window -h -t "${win_name}.1" -c "$target_path"
 
-# 左下 claude pane 先開該 worktree 的 Agent View（cca 為 .zshrc 定義的函式，
-# 故用 send-keys 讓互動 shell 執行；離開 TUI 後仍是可用的 shell）
+# 左下 claude pane 開主 repo 的 Agent View（主控台，與 0:claude 相同，看得到所有 session）。
+# cca 為 .zshrc 定義的函式，故用 send-keys 讓互動 shell 執行；離開 TUI 後仍是可用的 shell
 tmux send-keys -t "${win_name}.1" 'cca' C-m
 
 tmux select-pane -t "${win_name}.0"

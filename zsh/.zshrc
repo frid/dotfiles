@@ -144,40 +144,15 @@ export PATH="$HOME/dotfiles/bin:$PATH"
 # vim-plug 裝的 junegunn/fzf 本體較新，排到 PATH 前面讓 shell 與 nvim 用同一版。
 [ -x "$HOME/.vim/plugged/fzf/bin/fzf" ] && export PATH="$HOME/.vim/plugged/fzf/bin:$PATH"
 
-# cca：只顯示「目前所在專案」的 Claude Code 背景 session。
-# Agent View 本身不顯示 cwd，多 worktree 時分不出誰是誰。
-# 在 worktree 內：用 --cwd 限定，開互動式 Agent View。
-# 在主 repo：worktree 實體位於 .claude/worktrees/ 底下，--cwd 是前綴比對擋不掉，
-# 故改為列出後以 cwd 精確過濾（純文字，非互動式）。想看全部用 ca。
+# cca：從 repo 內任何位置（main 或任一 worktree）開主 repo 的 Agent View＝主控台。
+# --cwd 是前綴比對，主 repo 路徑涵蓋 .claude/worktrees/*，所以看得到所有 session
+# （不論從 main 或 worktree 啟動）。wt-picker.sh 開新 worktree 視窗時左下格也用它。
 cca() {
-  local root rest
-  case "$PWD" in
-    */.claude/worktrees/*)
-      rest="${PWD#*/.claude/worktrees/}"
-      root="${PWD%/.claude/worktrees/*}/.claude/worktrees/${rest%%/*}"
-      claude agents --cwd "$root" "$@"
-      return
-      ;;
-  esac
-  root="$(git rev-parse --show-toplevel 2>/dev/null)" || {
-    echo "cca: 目前目錄不是 git repo" >&2
-    return 1
+  local common
+  common="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || {
+    echo "cca: 目前目錄不是 git repo" >&2; return 1
   }
-  claude agents --json --all --cwd "$root" | ROOT="$root" python3 -c '
-import json, os, sys
-root = os.environ["ROOT"]
-try:
-    rows = json.load(sys.stdin)
-except Exception:
-    print("cca: 無法解析 claude agents --json 輸出", file=sys.stderr); sys.exit(1)
-rows = [r for r in rows if r.get("cwd") == root]
-if not rows:
-    print("（沒有屬於 %s 的 session；worktree 的請 cd 進去再打 cca）" % root); sys.exit(0)
-print("%s  共 %d 個 session（不含 worktree）\n" % (root, len(rows)))
-for r in rows:
-    print("  %-10s %-9s %-8s %s" % (r.get("id",""), r.get("status",""), r.get("state",""), r.get("name","")))
-print("\n互動式全部檢視： ca %s" % root)
-'
+  claude agents --cwd "$(dirname "$common")" "$@"
 }
 
 # ca：以「目前資料夾」為範圍的 Agent View（不要求 git repo，適合 Trustmark 這類非 repo 專案）。
