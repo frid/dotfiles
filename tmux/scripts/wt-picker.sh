@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 多 worktree tmux 切換器：prefix+g 觸發
 # 用呼叫時所在 pane 的目錄判斷是哪個 git repo（不寫死路徑，誰在哪個專案按都能用）。
-# 列出該 repo 的 git worktree（含主 worktree，顯示為 master；已合併完成的任務 worktree 不列），選了之後：
+# 列出該 repo 的 git worktree（含主 worktree，顯示為 master；已合併完成的任務 worktree 不列，但 dev／main 永遠列），選了之後：
 #   - 已有對應 window 就切過去
 #   - 沒有就新建（上 nvim 滿寬／下右 shell，cd 到該 worktree；下左 claude 開主控台 Agent View）
 #
@@ -133,7 +133,10 @@ for i in "${!wt_paths[@]}"; do
         tip="${packed_tip[$b]:-}"
       fi
     fi
-    [ -n "$tip" ] && [ -n "${done_commit[$tip]:-}" ] && continue
+    # 長期分支（dev／main）永遠列出：release 後 dev 的 tip 會在 main 的合併歷史裡，不能當成「已完成」
+    case "$b" in dev|main) ;; *)
+      [ -n "$tip" ] && [ -n "${done_commit[$tip]:-}" ] && continue ;;
+    esac
     name="${p##*/}"
   fi
   printf '%s\t%s\n' "$name" "$p" >> "$list_file"
