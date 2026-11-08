@@ -397,7 +397,9 @@ require("nvim-tree").setup({
   },
   -- 隱藏 .git（dotfiles 本身仍顯示）
   filters = { dotfiles = false, custom = { "^.git$" } },
-  git = { enable = true, ignore = false, timeout = 1000 },
+  git = { enable = true, ignore = false, timeout = 5000,
+    -- Google Drive 掛載路徑 git 太慢，前綴比對停用（字串清單只做完全比對）
+    disable_for_dirs = function(path) return vim.startswith(path, "/mnt/g/") end },
   actions = {
     open_file = {
       quit_on_open = false,

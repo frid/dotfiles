@@ -110,6 +110,15 @@ alias reloadzsh="source ~/.zshrc"
 alias run_service="bash /mnt/d/CodeRepo/StockTracker/src/StockTracker/service/run_service.sh"
 alias vi='nvim'
 alias vim='nvim'
+# 用 Windows Chrome 開檔案或網址；本機檔案自動轉成 Windows 路徑
+unalias chrome 2>/dev/null
+function chrome {
+  local args=() a
+  for a in "$@"; do
+    if [[ -e "$a" ]]; then args+=("$(wslpath -w "$a")"); else args+=("$a"); fi
+  done
+  "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe" "${args[@]}" >/dev/null 2>&1 &!
+}
 
 
 # >>> conda initialize >>>
